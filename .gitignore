@@ -1,0 +1,17 @@
+# 依赖与构建
+node_modules/
+dist/
+
+# 渲染产物
+out/
+out_demo/
+wizard_out/
+*.tgz
+
+# Python 缓存
+__pycache__/
+*.pyc
+*.pyo
+
+# 系统文件
+.DS_Store

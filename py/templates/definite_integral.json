@@ -1,0 +1,56 @@
+{
+  "name": "definite_integral",
+  "description": "Visualize a definite integral as the area under a curve between two bounds.",
+  "parameters": {
+    "func": {
+      "type": "string",
+      "required": true,
+      "description": "Function expression, e.g. \"np.sin(x)\" or \"x**2\""
+    },
+    "a": {
+      "type": "number",
+      "required": true,
+      "description": "Lower integration bound."
+    },
+    "b": {
+      "type": "number",
+      "required": true,
+      "description": "Upper integration bound."
+    },
+    "title": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Optional title, e.g. \"\\\\int_0^{\\\\pi} \\\\sin x\\\\,dx = 2\""
+    }
+  },
+  "code": "from manim import *\nimport math\nfrom math import pi\n\n\ndef _smart_text(text, font_size):\n    \"\"\"含非 ASCII 字符（中文/希腊字母/全角符号）用 Text（Pango 渲染，支持中文）；纯 ASCII 用 MathTex（LaTeX 渲染，支持数学公式）。\"\"\"\n    return Text(text, font_size=font_size) if any(ord(c) > 127 for c in text) else MathTex(text, font_size=font_size)\n\n\nclass DefiniteIntegralScene(Scene):\n    def construct(self):\n        expr = {{func}}\n        a = {{a}}\n        b = {{b}}\n        title_text = {{title}}\n\n        axes = Axes(\n            x_range=[-6, 6, 1],\n            y_range=[-4, 4, 1],\n            axis_config={\"include_numbers\": True, \"font_size\": 18},\n        ).scale(0.9)\n        self.play(Create(axes))\n\n        f = lambda x: eval(expr, {\"__builtins__\": {}}, {\"x\": x, \"np\": np, \"math\": math, \"pi\": pi})\n        graph = axes.plot(f, color=YELLOW)\n        self.play(Create(graph))\n\n        area = axes.get_area(graph, x_range=[a, b], color=BLUE, opacity=0.5)\n        self.play(FadeIn(area), run_time=1.5)\n\n        a_dot = Dot(axes.coords_to_point(a, 0), color=RED)\n        b_dot = Dot(axes.coords_to_point(b, 0), color=RED)\n        self.play(Create(a_dot), Create(b_dot))\n\n        if title_text:\n            integral = _smart_text(title_text, font_size=52).to_edge(UP)\n            self.play(Write(integral))\n\n        self.wait(2)\n",
+  "ui": {
+    "label": "定积分（曲线下面积）",
+    "description": "用颜色填充曲线与 x 轴围成的面积，直观展示定积分",
+    "fields": [
+      {
+        "key": "func",
+        "label": "函数",
+        "control": "text",
+        "hint": "如 sin(x)、x**2"
+      },
+      {
+        "key": "a",
+        "label": "积分下限",
+        "control": "number"
+      },
+      {
+        "key": "b",
+        "label": "积分上限",
+        "control": "number"
+      },
+      {
+        "key": "title",
+        "label": "标题（数学公式）",
+        "control": "text",
+        "hint": "可选。如 \\int_0^{\\pi} \\sin x\\,dx"
+      }
+    ]
+  }
+}

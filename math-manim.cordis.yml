@@ -1,0 +1,15 @@
+# dshmath-manim 插件配置：在 DeepSeek Harness 中启用数学动画工具。
+#
+# 本地开发加载（在 dsh 仓库目录下）：
+#   dsh --patch path/to/math-manim.cordis.yml
+# 或作为独立插件包发布后：
+#   - insert:
+#       - id: dshmath-manim
+#         name: 'dshmath-manim'
+
+- insert:
+    - id: dshmath-manim
+      name: 'dshmath-manim'
+      config:
+        # 渲染输出目录（可选，默认插件包内 out/）
+        outdir: ./math-videos

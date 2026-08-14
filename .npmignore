@@ -1,0 +1,16 @@
+# 渲染产物与缓存
+out/
+out_demo/
+wizard_out/
+__pycache__/
+*.pyc
+*.pyo
+dist/*.map
+
+# 开发与工具
+node_modules/
+src/
+tsconfig.json
+package-lock.json
+.npmignore
+.gitignore

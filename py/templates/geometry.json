@@ -1,0 +1,98 @@
+{
+  "name": "geometry",
+  "description": "Draw basic geometry: triangle, square, circle with optional side labels.",
+  "parameters": {
+    "shape": {
+      "type": "string",
+      "required": true,
+      "description": "One of: triangle, square, circle, pentagon, hexagon"
+    },
+    "color": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "CSS color name or hex, default YELLOW."
+    },
+    "label": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Optional MathTex label, e.g. \"\\\\triangle ABC\""
+    }
+  },
+  "code": "from manim import *\n\n\ndef _smart_text(text, font_size):\n    \"\"\"含非 ASCII 字符（中文/希腊字母/全角符号）用 Text（Pango 渲染，支持中文）；纯 ASCII 用 MathTex（LaTeX 渲染，支持数学公式）。\"\"\"\n    return Text(text, font_size=font_size) if any(ord(c) > 127 for c in text) else MathTex(text, font_size=font_size)\n\n\n# 安全的颜色名映射（避免对用户输入做 eval）\nCOLOR_MAP = {\n    \"red\": RED, \"blue\": BLUE, \"green\": GREEN, \"yellow\": YELLOW,\n    \"orange\": ORANGE, \"purple\": PURPLE, \"pink\": PINK, \"white\": WHITE,\n    \"black\": BLACK, \"cyan\": TEAL, \"gray\": GREY_B, \"grey\": GREY_B,\n}\n\n\nclass GeometryScene(Scene):\n    def construct(self):\n        shape_name = {{shape}}\n        color_name = {{color}}\n        label_text = {{label}}\n\n        if color_name:\n            color = color_name if color_name.startswith('#') else COLOR_MAP.get(color_name.lower(), YELLOW)\n        else:\n            color = YELLOW\n\n        shapes = {\n            \"triangle\": Polygon(LEFT * 2 + DOWN * 1.5, RIGHT * 2 + DOWN * 1.5, UP * 2),\n            \"square\": Square(side_length=3),\n            \"circle\": Circle(radius=1.8),\n            \"pentagon\": RegularPolygon(5, radius=2),\n            \"hexagon\": RegularPolygon(6, radius=2),\n        }\n        if shape_name not in shapes:\n            shape_name = \"circle\"\n        shape = shapes[shape_name].set_color(color).set_stroke(width=4)\n\n        self.play(Create(shape), run_time=2)\n\n        if label_text:\n            label = _smart_text(label_text, font_size=50)\n            self.play(Write(label))\n\n        self.wait(2)\n",
+  "ui": {
+    "label": "几何图形",
+    "description": "绘制三角形、正方形、圆或正多边形",
+    "fields": [
+      {
+        "key": "shape",
+        "label": "图形类型",
+        "control": "select",
+        "options": [
+          {
+            "value": "triangle",
+            "label": "三角形"
+          },
+          {
+            "value": "square",
+            "label": "正方形"
+          },
+          {
+            "value": "circle",
+            "label": "圆"
+          },
+          {
+            "value": "pentagon",
+            "label": "正五边形"
+          },
+          {
+            "value": "hexagon",
+            "label": "正六边形"
+          }
+        ]
+      },
+      {
+        "key": "color",
+        "label": "颜色",
+        "control": "select",
+        "options": [
+          {
+            "value": "yellow",
+            "label": "黄色"
+          },
+          {
+            "value": "blue",
+            "label": "蓝色"
+          },
+          {
+            "value": "green",
+            "label": "绿色"
+          },
+          {
+            "value": "red",
+            "label": "红色"
+          },
+          {
+            "value": "orange",
+            "label": "橙色"
+          },
+          {
+            "value": "purple",
+            "label": "紫色"
+          },
+          {
+            "value": "pink",
+            "label": "粉色"
+          }
+        ]
+      },
+      {
+        "key": "label",
+        "label": "标签（数学公式）",
+        "control": "text",
+        "hint": "可选。如 \\triangle ABC"
+      }
+    ]
+  }
+}

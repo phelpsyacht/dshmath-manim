@@ -1,0 +1,46 @@
+{
+  "name": "dshmath-manim",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness math animation plugin powered by Manim CE (zero-code skills for math/physics users)",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "cordis",
+    "manim",
+    "math",
+    "physics",
+    "animation"
+  ],
+  "license": "MIT",
+  "files": [
+    "dist/",
+    "py/",
+    "skills/",
+    "math-manim.cordis.yml",
+    "README.md"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./math-manim.cordis.yml"
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare": "npm run build",
+    "prepack": "npm run build && find py -name __pycache__ -type d -prune -exec rm -rf {} + && find . -name '*.pyc' -not -path './node_modules/*' -delete",
+    "prepublishOnly": "npm run build",
+    "pack": "npm run build && npm pack"
+  },
+  "dependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-skill": "^0.0.1-rc.1",
+    "@deepseek-ai/dsh-tools": "^0.0.1-rc.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "typescript": "^5.5.0"
+  }
+}

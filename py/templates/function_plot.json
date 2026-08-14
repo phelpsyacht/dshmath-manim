@@ -1,0 +1,58 @@
+{
+  "name": "function_plot",
+  "description": "Plot one or two real functions on a coordinate plane with a title.",
+  "parameters": {
+    "functions": {
+      "type": "array",
+      "required": true,
+      "description": "List of function expressions in Python syntax, e.g. [\"np.sin(x)\", \"x**2\"]"
+    },
+    "x_min": {
+      "type": "number",
+      "required": false,
+      "default": -6,
+      "description": "Left x boundary. Default -6."
+    },
+    "x_max": {
+      "type": "number",
+      "required": false,
+      "default": 6,
+      "description": "Right x boundary. Default 6."
+    },
+    "title": {
+      "type": "string",
+      "required": false,
+      "default": "",
+      "description": "Optional scene title."
+    }
+  },
+  "code": "from manim import *\nimport math\nfrom math import pi, e\n\n\ndef _smart_text(text, font_size):\n    \"\"\"含非 ASCII 字符（中文/希腊字母/全角符号）用 Text（Pango 渲染，支持中文）；纯 ASCII 用 MathTex（LaTeX 渲染，支持数学公式）。\"\"\"\n    return Text(text, font_size=font_size) if any(ord(c) > 127 for c in text) else MathTex(text, font_size=font_size)\n\n\nclass FunctionPlotScene(Scene):\n    def construct(self):\n        functions = {{functions}}\n        x_min = {{x_min}}\n        x_max = {{x_max}}\n        title_text = {{title}}\n\n        axes = Axes(\n            x_range=[x_min, x_max, 1],\n            y_range=[-4, 4, 1],\n            axis_config={\"include_numbers\": True, \"font_size\": 18},\n        )\n        labels = axes.get_axis_labels(x_label=\"x\", y_label=\"y\")\n        self.play(Create(axes), Write(labels))\n\n        colors = [YELLOW, BLUE, GREEN, RED]\n        graphs = VGroup()\n        for i, expr in enumerate(functions):\n            graph = axes.plot(\n                lambda x, e=expr: eval(e, {\"__builtins__\": {}}, {\"x\": x, \"np\": np, \"math\": math, \"pi\": pi, \"e\": e}),\n                x_range=[x_min, x_max],\n                color=colors[i % len(colors)],\n            )\n            graphs.add(graph)\n            self.play(Create(graph), run_time=1.5)\n\n        if title_text:\n            title = _smart_text(title_text, font_size=48).to_edge(UP)\n            self.play(Write(title))\n\n        self.wait(2)\n",
+  "ui": {
+    "label": "函数图像",
+    "description": "绘制一个或多个函数曲线（可同时显示多条对比）",
+    "fields": [
+      {
+        "key": "functions",
+        "label": "函数列表",
+        "control": "textarea",
+        "hint": "每行一个函数，用 x 作为自变量。示例：sin(x)、x**2、x**3 - 2*x"
+      },
+      {
+        "key": "x_min",
+        "label": "x 轴左边界",
+        "control": "number"
+      },
+      {
+        "key": "x_max",
+        "label": "x 轴右边界",
+        "control": "number"
+      },
+      {
+        "key": "title",
+        "label": "标题（数学公式）",
+        "control": "text",
+        "hint": "可选。支持 LaTeX，如 y=\\sin(x)"
+      }
+    ]
+  }
+}
