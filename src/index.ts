@@ -19,7 +19,12 @@ export const description = 'Manim CE 数学动画插件：将数学概念渲染�
 
 export const inject = ['tools', 'skills']
 
-export function apply(ctx: Context) {
+/** 插件配置：outdir 对应 cordis.yml 中的 config.outdir，不配置时用插件 out/ 目录 */
+export interface PluginConfig {
+  outdir?: string
+}
+
+export function apply(ctx: Context, config: PluginConfig = {}) {
   // ---------------------------------------------------------------------
   // 技能包 — 零代码提示词引导（面向不懂代码的用户）
   //   math-animation：模板路径（默认推荐）
@@ -98,7 +103,7 @@ export function apply(ctx: Context) {
             template: args.template,
             params: (args.params ?? {}) as Record<string, unknown>,
             quality: args.quality ?? 'low',
-            outdir: args.outdir,
+            outdir: args.outdir ?? config.outdir,
           },
           exec.signal,
         )
@@ -121,6 +126,7 @@ export function apply(ctx: Context) {
       parameters: {
         code: { type: 'string', required: true, description: 'Complete Manim Python scene source code (class extending Scene).' },
         quality: { type: 'string', enum: ['low', 'medium', 'high', 'ultra'], description: 'Render quality. Default low.' },
+        outdir: { type: 'string', description: 'Output directory. Defaults to plugin out/.' },
       },
       output: {
         schema: { type: 'object', additionalProperties: true },
@@ -134,7 +140,7 @@ export function apply(ctx: Context) {
         ],
       },
       async execute(args, exec) {
-        const res = await renderCode({ code: args.code, quality: args.quality ?? 'low' }, exec.signal)
+        const res = await renderCode({ code: args.code, quality: args.quality ?? 'low', outdir: args.outdir ?? config.outdir }, exec.signal)
         if (!res.data) {
           throw new Error(`render_math_code: ${res.stderrTail ?? 'no output'}`)
         }

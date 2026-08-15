@@ -43,13 +43,17 @@ export interface RunnerResult {
 /** 子进程默认超时：low=5min，其余 10min */
 const TIMEOUT_MS = 10 * 60 * 1000
 
+/** Python 解释器：可用 PYTHON_BIN 环境变量覆盖（如指向 venv 中的 python） */
+const PYTHON_BIN = process.env.PYTHON_BIN ?? 'python3'
+
 function runProcess(
   args: string[],
   signal?: AbortSignal,
   timeoutMs = TIMEOUT_MS,
+  input?: string,
 ): Promise<RunnerResult> {
   return new Promise((resolve) => {
-    const child = spawn('python3', ['-u', RUNNER_PATH, ...args], {
+    const child = spawn(PYTHON_BIN, ['-u', RUNNER_PATH, ...args], {
       cwd: join(__dirname, '..'),
       env: cleanEnv(),
       signal,
@@ -57,7 +61,11 @@ function runProcess(
 
     let stdout = ''
     let stderr = ''
-    const timer = setTimeout(() => child.kill('SIGKILL'), timeoutMs)
+    let timedOut = false
+    const timer = setTimeout(() => {
+      timedOut = true
+      child.kill('SIGKILL')
+    }, timeoutMs)
 
     child.stdout.on('data', (chunk: Buffer) => {
       stdout += chunk.toString()
@@ -67,7 +75,7 @@ function runProcess(
     })
     child.on('error', (err) => {
       clearTimeout(timer)
-      resolve({ ok: false, returncode: -1, stderrTail: String(err) })
+      resolve({ ok: false, returncode: -1, stderrTail: `failed to spawn ${PYTHON_BIN}: ${String(err)}` })
     })
     child.on('close', (code) => {
       clearTimeout(timer)
@@ -80,6 +88,9 @@ function runProcess(
       } catch {
         // 解析失败时保留原始输出
       }
+      if (timedOut) {
+        stderr += `\n[render timed out after ${timeoutMs} ms]`
+      }
       resolve({
         ok: data?.ok === true,
         data,
@@ -87,6 +98,10 @@ function runProcess(
         stderrTail: stderr.slice(-3000),
       })
     })
+    if (input != null) {
+      child.stdin.write(input)
+    }
+    child.stdin.end()
   })
 }
 
@@ -109,29 +124,32 @@ export async function listTemplates(signal?: AbortSignal): Promise<RunnerResult>
 }
 
 export async function renderScene(req: RenderRequest, signal?: AbortSignal): Promise<RunnerResult> {
+  // 参数 JSON 走 stdin，避免超长参数撑爆命令行（E2BIG）
   const args = [
     'render',
     '--template', req.template,
-    '--params', JSON.stringify(req.params ?? {}),
     '--quality', req.quality ?? 'low',
     '--outdir', req.outdir ?? join(__dirname, '..', 'out'),
   ]
-  return runProcess(args, signal)
+  return runProcess(args, signal, TIMEOUT_MS, JSON.stringify(req.params ?? {}))
 }
 
 export async function renderCode(req: RenderCodeRequest, signal?: AbortSignal): Promise<RunnerResult> {
   // 自定义代码写入临时文件后交给 Python 侧校验 + 渲染
-  const tmp = join(__dirname, '..', 'out', `.scene_${Date.now()}.py`)
-  const { writeFileSync } = await import('node:fs')
+  const { mkdirSync, writeFileSync, rmSync } = await import('node:fs')
+  const out = req.outdir ?? join(__dirname, '..', 'out')
+  // 确保输出目录存在，否则 writeFileSync 会 ENOENT 崩溃
+  mkdirSync(out, { recursive: true })
+  const tmp = join(out, `.scene_${Date.now()}.py`)
   writeFileSync(tmp, req.code, 'utf8')
   try {
-    return await runProcess(['render-code', '--code-file', tmp, '--quality', req.quality ?? 'low', '--outdir', req.outdir ?? join(__dirname, '..', 'out')], signal)
+    return await runProcess(['render-code', '--code-file', tmp, '--quality', req.quality ?? 'low', '--outdir', out], signal)
   } finally {
-    const { rmSync } = await import('node:fs')
     rmSync(tmp, { force: true })
   }
 }
 
 export async function validateScene(code: string, signal?: AbortSignal): Promise<RunnerResult> {
-  return runProcess(['validate', '--code', code], signal)
+  // 代码走 stdin，避免超长代码撑爆命令行（E2BIG）
+  return runProcess(['validate'], signal, TIMEOUT_MS, code)
 }

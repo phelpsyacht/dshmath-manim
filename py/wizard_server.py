@@ -341,9 +341,21 @@ class Handler(BaseHTTPRequestHandler):
         else:
             self._send_json({"error": "not found"}, 404)
 
+    def _check_origin(self) -> bool:
+        """拒绝来自非本机的 Origin/Referer，防止本地恶意网页跨站触发渲染。"""
+        origin = self.headers.get("Origin") or self.headers.get("Referer")
+        if not origin:
+            return True  # 无来源头的本地请求（如 curl）放行
+        port = self.server.server_address[1]
+        allowed = {f"127.0.0.1:{port}", f"localhost:{port}", "127.0.0.1", "localhost"}
+        return urlparse(origin).netloc in allowed
+
     def do_POST(self):
         path = urlparse(self.path).path
         if path == "/api/render":
+            if not self._check_origin():
+                self._send_json({"error": "forbidden origin"}, 403)
+                return
             length = int(self.headers.get("Content-Length", 0))
             try:
                 payload = json.loads(self.rfile.read(length) or b"{}")
