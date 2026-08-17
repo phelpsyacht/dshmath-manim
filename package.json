@@ -14,7 +14,7 @@
     "physics",
     "animation"
   ],
-  "license": "MIT",
+  "license": "Apache-2.0",
   "files": [
     "dist/",
     "py/",
@@ -34,7 +34,8 @@
     "prepublishOnly": "npm run build",
     "pack": "npm run build && npm pack"
   },
-  "dependencies": {
+  "dependencies": {},
+  "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",
     "@deepseek-ai/dsh-skill": "^0.1.0-rc.6",
     "@deepseek-ai/dsh-tools": "^0.1.0-rc.6"
