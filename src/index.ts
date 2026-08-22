@@ -10,6 +10,7 @@
  */
 
 import type { Context } from '@deepseek-ai/cordis'
+import Schema from '@deepseek-ai/schemastery'
 import { defineTool } from '@deepseek-ai/dsh-tools'
 import { listTemplates, renderScene, renderCode, validateScene } from './runner.js'
 import { registerSkills } from './skill.js'
@@ -20,11 +21,16 @@ export const description = 'Manim CE 数学动画插件：将数学概念渲染�
 export const inject = ['tools', 'skills']
 
 /** 插件配置：outdir 对应 cordis.yml 中的 config.outdir，不配置时用插件 out/ 目录 */
-export interface PluginConfig {
+export interface Config {
   outdir?: string
 }
 
-export function apply(ctx: Context, config: PluginConfig = {}) {
+/** 同名 Schema：Cordis 加载插件时据此校验配置并填充默认值 */
+export const Config: Schema<Config> = Schema.object({
+  outdir: Schema.string(),
+})
+
+export function apply(ctx: Context, config: Config) {
   // ---------------------------------------------------------------------
   // 技能包 — 零代码提示词引导（面向不懂代码的用户）
   //   math-animation：模板路径（默认推荐）
