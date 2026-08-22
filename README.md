@@ -34,13 +34,17 @@ dshmath-manim/
 │   └── runner.ts             # TS ⇄ Python 桥接（子进程 + 超时 + 安全环境）
 └── py/
     ├── manim_runner.py       # 渲染执行器（模板/校验/渲染，JSON 输出）
-    └── templates/            # 数学动画模板
-        ├── function_plot     # 函数绘图（一/二元函数）
-        ├── derivative_tangent# 导数与切线（数值斜率）
-        ├── definite_integral # 定积分（曲线下面积）
-        ├── geometry          # 几何图形（三角形/圆/正多边形）
-        ├── polar_plot        # 极坐标曲线（心形线等）
-        └── surface_3d        # 3D 曲面（ThreeDScene）
+    ├── templates/            # 数学动画模板
+    │   ├── function_plot     # 函数绘图（一/二元函数）
+    │   ├── derivative_tangent# 导数与切线（数值斜率）
+    │   ├── definite_integral # 定积分（曲线下面积）
+    │   ├── geometry          # 几何图形（三角形/圆/正多边形）
+    │   ├── polar_plot        # 极坐标曲线（心形线等）
+    │   └── surface_3d        # 3D 曲面（ThreeDScene）
+    └── examples/             # 自定义场景示例（走 render_math_code 自由代码路径）
+        ├── spring_mass_oscillator.py  # 弹簧振荡（简谐运动，含 x(t) 轨迹同步）
+        ├── spring_oscillator.py       # 弹簧振子（位移-时间）
+        └── bouncing_ball.py           # 小球弹跳
 ```
 
 ## 数学动画向导（零代码使用）
@@ -144,6 +148,11 @@ dsh --patch /path/to/dshmath-manim/math-manim.cordis.yml
 #     - id: dshmath-manim
 #       name: 'dshmath-manim'
 ```
+
+> 依赖要求：本插件面向新版 dsh web（依赖族 `@deepseek-ai/*@0.1.1-rc.2`）。
+> `package.json` 的 peerDependencies 已声明 `@deepseek-ai/dsh-skill` / `@deepseek-ai/dsh-tools`
+> 为 `^0.1.1-rc.2`，并采用新版插件的同名 `Config` + Schemastery `Schema` 配置格式，
+> 与较新的 dsh web 兼容。若使用更早的 `0.1.0-rc.x` 版本 dsh，请降级对应 peer 依赖。
 
 加载后启动 `npx @deepseek-ai/dsh web`，在对话中即可使用，例如：
 
