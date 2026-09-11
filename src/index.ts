@@ -27,7 +27,7 @@ export interface Config {
 
 /** 同名 Schema：Cordis 加载插件时据此校验配置并填充默认值 */
 export const Config: Schema<Config> = Schema.object({
-  outdir: Schema.string(),
+  outdir: Schema.string().description('渲染输出目录；默认为插件包内 out/ 目录'),
 })
 
 export function apply(ctx: Context, config: Config) {

@@ -149,10 +149,11 @@ dsh --patch /path/to/dshmath-manim/math-manim.cordis.yml
 #       name: 'dshmath-manim'
 ```
 
-> 依赖要求：本插件面向新版 dsh web（依赖族 `@deepseek-ai/*@0.1.1-rc.2`）。
-> `package.json` 的 peerDependencies 已声明 `@deepseek-ai/dsh-skill` / `@deepseek-ai/dsh-tools`
-> 为 `^0.1.1-rc.2`，并采用新版插件的同名 `Config` + Schemastery `Schema` 配置格式，
-> 与较新的 dsh web 兼容。若使用更早的 `0.1.0-rc.x` 版本 dsh，请降级对应 peer 依赖。
+> 依赖要求：本插件依赖世代对齐 `@deepseek-ai/dsh@0.1.5-rc.2` —— `@deepseek-ai/cordis@^4.0.2`、
+> `@deepseek-ai/dsh-tools@^0.1.5-rc.2`、`@deepseek-ai/dsh-skill@^0.1.5-rc.2`、
+> `@deepseek-ai/schemastery@^3.18.2`。`package.json` 已按此声明 peerDependencies，
+> 并采用同名 `Config` + Schemastery `Schema` 配置格式，与较新的 dsh web 兼容。
+> 若使用更早的 `0.1.2-rc.x` 及以下版本 dsh，请降级对应 peer 依赖。
 
 加载后启动 `npx @deepseek-ai/dsh web`，在对话中即可使用，例如：
 
