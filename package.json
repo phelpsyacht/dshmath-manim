@@ -1,6 +1,6 @@
 {
   "name": "dshmath-manim",
-  "version": "0.1.1",
+  "version": "0.1.5",
   "description": "DeepSeek Harness math animation plugin powered by Manim CE (zero-code skills for math/physics users)",
   "type": "module",
   "main": "./dist/index.js",
