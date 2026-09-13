@@ -6,6 +6,7 @@ dist/
 out/
 out_demo/
 wizard_out/
+math-videos/
 *.tgz
 
 # Python 缓存
