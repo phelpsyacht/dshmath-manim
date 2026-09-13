@@ -277,6 +277,40 @@ def _render_manim(code_file: Path, quality: str, outdir: Path, extra_args: list[
     return subprocess.run(cmd, capture_output=True, text=True, timeout=300, env=_clean_env())
 
 
+def _normalize_resolution(value: str | None) -> str | None:
+    """Normalize a resolution spec to 'WxH'.
+
+    Accepts 'WxH' / 'W,H' / 'W*H' and the presets portrait|vertical|douyin|9:16
+    (1080x1920) and landscape|horizontal|16:9 (1920x1080). Returns None when unset.
+    """
+    if not value:
+        return None
+    key = str(value).strip().lower()
+    presets = {
+        "portrait": "1080x1920",
+        "vertical": "1080x1920",
+        "douyin": "1080x1920",
+        "9:16": "1080x1920",
+        "landscape": "1920x1080",
+        "horizontal": "1920x1080",
+        "16:9": "1920x1080",
+    }
+    if key in presets:
+        return presets[key]
+    parts = key.replace(",", "x").replace("*", "x").split("x")
+    if len(parts) == 2 and all(part.strip().isdigit() for part in parts):
+        width, height = (int(part) for part in parts)
+        if width > 0 and height > 0:
+            return f"{width}x{height}"
+    raise ValueError(f"invalid resolution '{value}': use WxH or portrait/landscape")
+
+
+def _resolution_args(resolution: str | None) -> list[str]:
+    """Build the manim CLI '-r W,H' extra args for a resolution spec (empty when unset)."""
+    normalized = _normalize_resolution(resolution)
+    return ["-r", normalized.replace("x", ",")] if normalized else []
+
+
 def _find_video(outdir: Path) -> Path | None:
     """定位成片：排除 partial_movie_files 中间文件，优先取最新的完整视频。"""
     for ext in VIDEO_EXTENSIONS:
@@ -286,7 +320,7 @@ def _find_video(outdir: Path) -> Path | None:
     return None
 
 
-def render_scene(template: str, params: dict, quality: str = "low", outdir: str | Path | None = None) -> dict:
+def render_scene(template: str, params: dict, quality: str = "low", outdir: str | Path | None = None, resolution: str | None = None) -> dict:
     """渲染一个模板场景，返回结果 dict（不打印）。供 CLI / wizard / TS 桥接共用。"""
     templates = _load_templates()
     if template not in templates:
@@ -315,7 +349,11 @@ def render_scene(template: str, params: dict, quality: str = "low", outdir: str 
 
         out = Path(outdir).resolve() if outdir else Path.cwd() / "out"
         out.mkdir(parents=True, exist_ok=True)
-        proc = _render_manim(code_file, quality, out, [])
+        try:
+            extra_args = _resolution_args(resolution)
+        except ValueError as exc:
+            return {"ok": False, "error": str(exc)}
+        proc = _render_manim(code_file, quality, out, extra_args)
         # 仅渲染成功时才报告成片，避免把历史视频当作本次结果
         video = _find_video(out) if proc.returncode == 0 else None
         result = {
@@ -342,7 +380,7 @@ def cmd_render(args: argparse.Namespace) -> int:
     except json.JSONDecodeError as exc:
         print(json.dumps({"ok": False, "error": f"invalid params JSON: {exc}"}))
         return 2
-    result = render_scene(args.template, params, args.quality, args.outdir)
+    result = render_scene(args.template, params, args.quality, args.outdir, getattr(args, "resolution", ""))
     print(json.dumps(result, ensure_ascii=False))
     return 0 if result.get("ok") else 2 if "unknown template" in str(result.get("error", "")) else 1
 
@@ -359,7 +397,12 @@ def cmd_render_code(args: argparse.Namespace) -> int:
         return 2
     outdir = Path(args.outdir).resolve()
     outdir.mkdir(parents=True, exist_ok=True)
-    proc = _render_manim(code_file, args.quality, outdir, [])
+    try:
+        extra_args = _resolution_args(getattr(args, "resolution", ""))
+    except ValueError as exc:
+        print(json.dumps({"ok": False, "error": str(exc)}))
+        return 2
+    proc = _render_manim(code_file, args.quality, outdir, extra_args)
     video = _find_video(outdir) if proc.returncode == 0 else None
     result = {
         "ok": proc.returncode == 0,
@@ -406,12 +449,14 @@ def main(argv: list[str] | None = None) -> int:
     p_render.add_argument("--template", required=True)
     p_render.add_argument("--params", default="", help="JSON object of template parameters (or pass via stdin)")
     p_render.add_argument("--quality", default="low", choices=["low", "medium", "high", "ultra"])
+    p_render.add_argument("--resolution", default="", help="output resolution, e.g. 1080x1920 / portrait / landscape")
     p_render.add_argument("--outdir", default=str(Path.cwd() / "out"))
     p_render.set_defaults(func=cmd_render)
 
     p_render_code = sub.add_parser("render-code", help="render an existing scene python file")
     p_render_code.add_argument("--code-file", required=True)
     p_render_code.add_argument("--quality", default="low", choices=["low", "medium", "high", "ultra"])
+    p_render_code.add_argument("--resolution", default="", help="output resolution, e.g. 1080x1920 / portrait / landscape")
     p_render_code.add_argument("--outdir", default=str(Path.cwd() / "out"))
     p_render_code.set_defaults(func=cmd_render_code)
 

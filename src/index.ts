@@ -30,7 +30,73 @@ export const Config: Schema<Config> = Schema.object({
   outdir: Schema.string().description('渲染输出目录；默认为插件包内 out/ 目录'),
 })
 
-export function apply(ctx: Context, config: Config) {
+// ---------------------------------------------------------------------------
+// Tool output contracts (canonical output schema).
+// The Harness validates every execute() return value against output.schema,
+// so these mirror py/manim_runner.py's JSON output field by field (success
+// and failure branches).
+// ---------------------------------------------------------------------------
+
+/** list_math_templates <- cmd_templates: {"ok": true, "templates": {...}} */
+const TEMPLATES_RESULT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    ok: { type: 'boolean', required: true },
+    templates: { type: 'object', additionalProperties: true, required: true },
+  },
+} as const
+
+/** render_math_scene <- render_scene: success plus template/param/render errors */
+const RENDER_SCENE_RESULT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    ok: { type: 'boolean', required: true },
+    error: { type: 'string' },
+    available: { type: 'array', items: { type: 'string' } },
+    details: { type: 'array', items: { type: 'string' } },
+    code: { type: 'string' },
+    template: { type: 'string' },
+    params: { type: 'object', additionalProperties: true },
+    quality: { type: 'string' },
+    returncode: { type: 'integer' },
+    video: { oneOf: [{ type: 'string' }, { type: 'null' }] },
+    size_bytes: { oneOf: [{ type: 'integer' }, { type: 'null' }] },
+  },
+} as const
+
+/** render_math_code <- cmd_render_code: success plus validation/render errors */
+const RENDER_CODE_RESULT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    ok: { type: 'boolean', required: true },
+    error: { type: 'string' },
+    details: { type: 'array', items: { type: 'string' } },
+    quality: { type: 'string' },
+    returncode: { type: 'integer' },
+    video: { oneOf: [{ type: 'string' }, { type: 'null' }] },
+    size_bytes: { oneOf: [{ type: 'integer' }, { type: 'null' }] },
+  },
+} as const
+
+/** validate_math_code <- cmd_validate: {"ok": bool, "violations": [...]} */
+const VALIDATE_RESULT_SCHEMA = {
+  type: 'object',
+  additionalProperties: false,
+  properties: {
+    ok: { type: 'boolean', required: true },
+    violations: { type: 'array', items: { type: 'string' }, required: true },
+  },
+} as const
+
+/** Fast budget for read-only tools. */
+const FAST_TIMEOUT_MS = 30 * 1000
+/** Cooperative budget for render tools; above runner.ts own 10min cap. */
+const RENDER_TIMEOUT_MS = 15 * 60 * 1000
+
+export function apply(ctx: Context, config: Config = {}) {
   // ---------------------------------------------------------------------
   // 技能包 — 零代码提示词引导（面向不懂代码的用户）
   //   math-animation：模板路径（默认推荐）
@@ -48,7 +114,7 @@ export function apply(ctx: Context, config: Config) {
         'List available math animation templates (function plots, derivatives, integrals, geometry, polar, 3D surfaces). Use this first to discover what the math plugin can render.',
       parameters: {},
       output: {
-        schema: { type: 'object', additionalProperties: true },
+        schema: TEMPLATES_RESULT_SCHEMA,
         render: (_args, value: any) => {
           const templates = value?.templates ?? {}
           const lines = Object.entries(templates).map(([k, v]: any) => {
@@ -60,12 +126,14 @@ export function apply(ctx: Context, config: Config) {
           return [{ type: 'text', text: `Available math templates:\n${lines.join('\n') || '(none)'}` }]
         },
       },
+      isConcurrencySafe: () => true,
+      timeoutMs: FAST_TIMEOUT_MS,
       async execute(_args, exec) {
         const res = await listTemplates(exec.signal)
         if (!res.ok || !res.data) {
           throw new Error(`Failed to list templates: ${res.stderrTail ?? 'unknown error'}`)
         }
-        return res.data
+        return res.data as any
       },
     }),
   )
@@ -93,7 +161,7 @@ export function apply(ctx: Context, config: Config) {
         outdir: { type: 'string', description: 'Output directory. Defaults to plugin out/.' },
       },
       output: {
-        schema: { type: 'object', additionalProperties: true },
+        schema: RENDER_SCENE_RESULT_SCHEMA,
         render: (_args, value: any) => [
           {
             type: 'text',
@@ -103,6 +171,8 @@ export function apply(ctx: Context, config: Config) {
           },
         ],
       },
+      isConcurrencySafe: () => false,
+      timeoutMs: RENDER_TIMEOUT_MS,
       async execute(args, exec) {
         const res = await renderScene(
           {
@@ -116,7 +186,7 @@ export function apply(ctx: Context, config: Config) {
         if (!res.data) {
           throw new Error(`render_math_scene: ${res.stderrTail ?? 'no output'}`)
         }
-        return res.data
+        return res.data as any
       },
     }),
   )
@@ -135,7 +205,7 @@ export function apply(ctx: Context, config: Config) {
         outdir: { type: 'string', description: 'Output directory. Defaults to plugin out/.' },
       },
       output: {
-        schema: { type: 'object', additionalProperties: true },
+        schema: RENDER_CODE_RESULT_SCHEMA,
         render: (_args, value: any) => [
           {
             type: 'text',
@@ -145,12 +215,14 @@ export function apply(ctx: Context, config: Config) {
           },
         ],
       },
+      isConcurrencySafe: () => false,
+      timeoutMs: RENDER_TIMEOUT_MS,
       async execute(args, exec) {
         const res = await renderCode({ code: args.code, quality: args.quality ?? 'low', outdir: args.outdir ?? config.outdir }, exec.signal)
         if (!res.data) {
           throw new Error(`render_math_code: ${res.stderrTail ?? 'no output'}`)
         }
-        return res.data
+        return res.data as any
       },
     }),
   )
@@ -167,7 +239,7 @@ export function apply(ctx: Context, config: Config) {
         code: { type: 'string', required: true, description: 'Manim scene source code to validate.' },
       },
       output: {
-        schema: { type: 'object', additionalProperties: true },
+        schema: VALIDATE_RESULT_SCHEMA,
         render: (_args, value: any) => [
           {
             type: 'text',
@@ -177,12 +249,14 @@ export function apply(ctx: Context, config: Config) {
           },
         ],
       },
+      isConcurrencySafe: () => true,
+      timeoutMs: FAST_TIMEOUT_MS,
       async execute(args, exec) {
         const res = await validateScene(args.code, exec.signal)
         if (!res.data) {
           throw new Error(`validate_math_code: ${res.stderrTail ?? 'no output'}`)
         }
-        return res.data
+        return res.data as any
       },
     }),
   )
