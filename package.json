@@ -40,6 +40,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "verify:dist": "npm run build && test -z \"$(git status --porcelain -- dist)\"",
     "prepack": "npm run build && find py -name __pycache__ -type d -prune -exec rm -rf {} + && find . -name '*.pyc' -not -path './node_modules/*' -delete",
     "prepublishOnly": "npm run build",
     "pack": "npm run build && npm pack"

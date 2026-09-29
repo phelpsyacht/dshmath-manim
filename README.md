@@ -160,6 +160,7 @@ dsh --patch /path/to/dshmath-manim/math-manim.cordis.yml
 > - **不要用 `npm install --omit=dev`**：那两个包不在 `dependencies` 里，`--omit=dev` 会一个都不装，
 >   插件照样起不来（实测）。
 > - 只有改动 `src/` 之后才需要 `npm run build`，并请把重建后的 `dist/` 一起提交。
+>   `npm run verify:dist` 可以一条命令查出产物是否过期（重建后 `dist/` 若发生变化即失败）。
 > - 走 GitHub 安装（`dsh plugin add github:...`）见下文「方式三」。
 
 > 依赖要求：本插件依赖世代对齐 `@deepseek-ai/dsh@0.1.5-rc.2` —— `@deepseek-ai/cordis@^4.0.2`、
