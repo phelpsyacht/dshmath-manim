@@ -149,14 +149,16 @@ dsh --patch /path/to/dshmath-manim/math-manim.cordis.yml
 #       name: 'dshmath-manim'
 ```
 
-> **clone 后无需编译**：`dist/` 已随仓库提供（不再被 `.gitignore` 忽略），clone 下来即可加载。
-> 但插件运行时需要 dsh 的插件 API 包可解析，所以还要装一次依赖：
+> **clone 后无需编译，但要装一次依赖**：`dist/` 已随仓库提供（不再被 `.gitignore` 忽略），
+> clone 下来即可加载。插件运行时需要 dsh 的插件 API 包可解析，执行一次完整安装即可：
 >
 > ```bash
-> npm install --omit=dev   # 只装 @deepseek-ai/dsh-tools / @deepseek-ai/schemastery 等运行时依赖
+> npm install     # 装上 @deepseek-ai/dsh-tools / @deepseek-ai/schemastery（声明在 devDependencies，同时是 dsh 的 peer 依赖）
 > ```
 >
 > - 报 `Cannot find package '@deepseek-ai/...'` → 漏了这一步。
+> - **不要用 `npm install --omit=dev`**：那两个包不在 `dependencies` 里，`--omit=dev` 会一个都不装，
+>   插件照样起不来（实测）。
 > - 只有改动 `src/` 之后才需要 `npm run build`，并请把重建后的 `dist/` 一起提交。
 > - 走 GitHub 安装（`dsh plugin add github:...`）见下文「方式三」。
 
