@@ -8,10 +8,21 @@
 
 import { spawn } from 'node:child_process'
 import { fileURLToPath } from 'node:url'
-import { dirname, join } from 'node:path'
+import { dirname, join, resolve } from 'node:path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 // 打包后 dist/runner.js -> ../py/manim_runner.py
+/** 插件包根目录；Python 子进程的 cwd 也在这里 */
+const BASE_DIR = join(__dirname, '..')
+/**
+ * 输出目录一律解析成绝对路径。
+ * Python 子进程用自身 cwd（插件根目录）解析相对路径，而 Node 此前是用进程 cwd
+ * 解析的 —— 若 dsh 从别处启动，`outdir: ./math-videos` 会导致 Node 写入的位置与
+ * Python 查找的位置不一致（报 "code file not found"）。统一以插件根目录为基准。
+ */
+function resolveOutdir(outdir?: string): string {
+  return resolve(BASE_DIR, outdir ?? 'out')
+}
 export const RUNNER_PATH = join(__dirname, '..', 'py', 'manim_runner.py')
 
 export interface RenderRequest {
@@ -129,7 +140,7 @@ export async function renderScene(req: RenderRequest, signal?: AbortSignal): Pro
     'render',
     '--template', req.template,
     '--quality', req.quality ?? 'low',
-    '--outdir', req.outdir ?? join(__dirname, '..', 'out'),
+    '--outdir', resolveOutdir(req.outdir),
   ]
   return runProcess(args, signal, TIMEOUT_MS, JSON.stringify(req.params ?? {}))
 }
@@ -137,7 +148,7 @@ export async function renderScene(req: RenderRequest, signal?: AbortSignal): Pro
 export async function renderCode(req: RenderCodeRequest, signal?: AbortSignal): Promise<RunnerResult> {
   // 自定义代码写入临时文件后交给 Python 侧校验 + 渲染
   const { mkdirSync, writeFileSync, rmSync } = await import('node:fs')
-  const out = req.outdir ?? join(__dirname, '..', 'out')
+  const out = resolveOutdir(req.outdir)
   // 确保输出目录存在，否则 writeFileSync 会 ENOENT 崩溃
   mkdirSync(out, { recursive: true })
   const tmp = join(out, `.scene_${Date.now()}.py`)
