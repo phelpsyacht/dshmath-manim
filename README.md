@@ -149,6 +149,18 @@ dsh --patch /path/to/dshmath-manim/math-manim.cordis.yml
 #       name: 'dshmath-manim'
 ```
 
+> **clone 后先编译**：`dist/` 是编译产物，不入库（见 `.gitignore`）。直接 clone 的仓库没有
+> `dist/index.js`，插件会加载失败（`Cannot find module .../dist/index.js`）。先执行：
+>
+> ```bash
+> npm install     # 自动触发 prepare → npm run build
+> # 或显式重建（用过 --ignore-scripts / --omit=dev，或改过 src/ 之后）
+> npm run build
+> ```
+>
+> 在 profile 里用 `link:` 加载本地 clone 时同样需要这一步；走 GitHub 安装
+> （`dsh plugin add github:...`）见下文「方式三」的 `allowBuilds` 说明。
+
 > 依赖要求：本插件依赖世代对齐 `@deepseek-ai/dsh@0.1.5-rc.2` —— `@deepseek-ai/cordis@^4.0.2`、
 > `@deepseek-ai/dsh-tools@^0.1.5-rc.2`、`@deepseek-ai/dsh-skill@^0.1.5-rc.2`、
 > `@deepseek-ai/schemastery@^3.18.2`。`package.json` 已按此声明 peerDependencies，
