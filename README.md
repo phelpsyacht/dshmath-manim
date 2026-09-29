@@ -149,17 +149,16 @@ dsh --patch /path/to/dshmath-manim/math-manim.cordis.yml
 #       name: 'dshmath-manim'
 ```
 
-> **clone 后先编译**：`dist/` 是编译产物，不入库（见 `.gitignore`）。直接 clone 的仓库没有
-> `dist/index.js`，插件会加载失败（`Cannot find module .../dist/index.js`）。先执行：
+> **clone 后无需编译**：`dist/` 已随仓库提供（不再被 `.gitignore` 忽略），clone 下来即可加载。
+> 但插件运行时需要 dsh 的插件 API 包可解析，所以还要装一次依赖：
 >
 > ```bash
-> npm install     # 自动触发 prepare → npm run build
-> # 或显式重建（用过 --ignore-scripts / --omit=dev，或改过 src/ 之后）
-> npm run build
+> npm install --omit=dev   # 只装 @deepseek-ai/dsh-tools / @deepseek-ai/schemastery 等运行时依赖
 > ```
 >
-> 在 profile 里用 `link:` 加载本地 clone 时同样需要这一步；走 GitHub 安装
-> （`dsh plugin add github:...`）见下文「方式三」的 `allowBuilds` 说明。
+> - 报 `Cannot find package '@deepseek-ai/...'` → 漏了这一步。
+> - 只有改动 `src/` 之后才需要 `npm run build`，并请把重建后的 `dist/` 一起提交。
+> - 走 GitHub 安装（`dsh plugin add github:...`）见下文「方式三」。
 
 > 依赖要求：本插件依赖世代对齐 `@deepseek-ai/dsh@0.1.5-rc.2` —— `@deepseek-ai/cordis@^4.0.2`、
 > `@deepseek-ai/dsh-tools@^0.1.5-rc.2`、`@deepseek-ai/dsh-skill@^0.1.5-rc.2`、
@@ -177,6 +176,7 @@ dsh --patch /path/to/dshmath-manim/math-manim.cordis.yml
 
 插件是标准的 dsh bundle 包：`package.json` 声明 `dsh.bundle.patch` 指向 `math-manim.cordis.yml`，
 `files` 字段保证 `dist/`（编译产物）、`py/`（Python 渲染后端与模板）、`skills/`（技能提示词）全部随包分发。
+`dist/` 同时**入库**（便于 clone 即用），npm 侧发布时由 `prepack` 重新构建，保证发布产物总是最新。
 
 ### 方式一：npm 发布（推荐，使用者一行安装）
 
@@ -199,8 +199,8 @@ dsh plugin add ./dshmath-manim-0.1.0.tgz
 ### 方式三：GitHub 安装
 
 给仓库打 `dsh-plugin` 话题即可进入社区生态；使用者可 `dsh plugin add github:you/dshmath-manim`。
-注意 git 安装拉取的是源码，需要 `prepare` 脚本且用户需在 profile 的 `pnpm-workspace.yaml`
-`allowBuilds` 中授权构建——推荐优先用 npm / tarball 避免此门槛。
+仓库已直接提供 `dist/`，且 `package.json` 不再带 `prepare` 构建脚本，因此 git 安装不需要在
+`pnpm-workspace.yaml` 的 `allowBuilds` 中授权构建即可加载（若你自行加回构建脚本，则需授权）。
 
 ### 使用者安装后的效果
 

@@ -40,7 +40,6 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
-    "prepare": "npm run build",
     "prepack": "npm run build && find py -name __pycache__ -type d -prune -exec rm -rf {} + && find . -name '*.pyc' -not -path './node_modules/*' -delete",
     "prepublishOnly": "npm run build",
     "pack": "npm run build && npm pack"

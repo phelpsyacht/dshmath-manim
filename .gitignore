@@ -1,6 +1,7 @@
-# 依赖与构建
+# 依赖
 node_modules/
-dist/
+# 注意：dist/ 故意入库 —— 别人 clone 后无需 build 即可加载插件（main 指向 dist/index.js）。
+# 改动 src/ 后请执行 npm run build 并把 dist/ 一起提交，否则运行时跑的仍是旧产物。
 
 # 渲染产物
 out/
