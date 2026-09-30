@@ -163,11 +163,13 @@ dsh --patch /path/to/dshmath-manim/math-manim.cordis.yml
 >   `npm run verify:dist` 可以一条命令查出产物是否过期（重建后 `dist/` 若发生变化即失败）。
 > - 走 GitHub 安装（`dsh plugin add github:...`）见下文「方式三」。
 
-> 依赖要求：本插件依赖世代对齐 `@deepseek-ai/dsh@0.1.5-rc.2` —— `@deepseek-ai/cordis@^4.0.2`、
-> `@deepseek-ai/dsh-tools@^0.1.5-rc.2`、`@deepseek-ai/dsh-skill@^0.1.5-rc.2`、
-> `@deepseek-ai/schemastery@^3.18.2`。`package.json` 已按此声明 peerDependencies，
+> 依赖要求：本插件依赖世代对齐 `@deepseek-ai/dsh@0.2.0-rc.2` —— `@deepseek-ai/cordis@~4.0.4`、
+> `@deepseek-ai/dsh-tools@^0.2.0-rc.2`、`@deepseek-ai/dsh-skill@^0.2.0-rc.2`、
+> `@deepseek-ai/schemastery@~3.18.4`。`package.json` 已按此声明 peerDependencies，
 > 并采用同名 `Config` + Schemastery `Schema` 配置格式，与较新的 dsh web 兼容。
-> 若使用更早的 `0.1.2-rc.x` 及以下版本 dsh，请降级对应 peer 依赖。
+> dsh 自 `0.2.0` 起会在加载时按 `peerDependencies` 校验插件兼容性：用 `0.1.5` 世代的 dsh 加载本版本
+> 会被整包跳过并给出原因。插件用到的 `defineTool`、`ctx.tools.register`、`ctx.skills.register`
+> 在新旧世代并未变化；需要跑在 `0.1.5` 上时请装本插件的 `0.1.5` 版本，或把 peer 区间放宽后自行验证。
 
 加载后启动 `npx @deepseek-ai/dsh web`，在对话中即可使用，例如：
 
@@ -194,9 +196,9 @@ dsh plugin --profile web add dshmath-manim
 ### 方式二：tarball 交付（内部/私有分发）
 
 ```bash
-npm pack                 # 生成 dshmath-manim-0.1.0.tgz
+npm pack                 # 生成 dshmath-manim-0.2.0.tgz
 # 使用者侧：
-dsh plugin add ./dshmath-manim-0.1.0.tgz
+dsh plugin add ./dshmath-manim-0.2.0.tgz
 ```
 
 ### 方式三：GitHub 安装
